@@ -11,24 +11,6 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
-
-#[wasm_bindgen]
-pub fn greet(name: &str) {
-    alert(&format!("Hello, {}!", name));
-}
-
-#[wasm_bindgen]
-#[repr(u8)] // So that each cell is represented as a byte.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Cell {
-    Dead = 0,
-    Alive = 1,
-}
-
-#[wasm_bindgen]
 pub struct Universe {
     width: u32,
     height: u32,
@@ -63,12 +45,45 @@ impl Universe {
     }
 }
 
+/// Public methods, not exposed to JavaScript.
+impl Universe {
+    /// Get the dead and alive values of the entire universe.
+    pub fn get_cells(&self) -> &[u32] {
+        &self.cells.as_slice()
+    }
+
+    /// Set cells to be alive in a universe by passing the row and column
+    /// of each cell as an array.
+    pub fn set_cells(&mut self, cells: &[(u32, u32)]) {
+        for (row, col) in cells.iter().cloned() {
+            let idx = self.get_index(row, col);
+            self.cells.set(idx, true);
+        }
+    }
+}
+
 /// Public methods exported to JavaScript.
 #[wasm_bindgen]
 impl Universe {
     /// Get the width of the universe, i.e. number of columns.
     pub fn width(&self) -> u32 {
         self.width
+    }
+
+    /// Set the width of the universe to `width`.
+    ///
+    /// Resets all cells to the dead state.
+    pub fn set_width(&mut self, width: u32) {
+        self.width = width;
+        self.cells.clear();
+    }
+
+    /// Set the height of the universe to `height`.
+    ///
+    /// Resets all cells to the dead state.
+    pub fn set_height(&mut self, height: u32) {
+        self.height = height;
+        self.cells.clear();
     }
 
     /// Get the height of the universe, i.e. number of rows.
@@ -83,6 +98,8 @@ impl Universe {
 
     /// Construct a new universe.
     pub fn new() -> Self {
+        utils::set_panic_hook();
+
         let width = 8;
         let height = 8;
 
