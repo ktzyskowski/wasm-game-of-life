@@ -1,8 +1,7 @@
 mod utils;
 
-use std::fmt;
-
 extern crate js_sys;
+use fixedbitset::FixedBitSet;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -33,7 +32,7 @@ pub enum Cell {
 pub struct Universe {
     width: u32,
     height: u32,
-    cells: Vec<Cell>,
+    cells: FixedBitSet,
 }
 
 /// Private helper methods.
@@ -78,35 +77,27 @@ impl Universe {
     }
 
     /// Get a pointer to the universe's cells.
-    pub fn cells(&self) -> *const Cell {
-        self.cells.as_ptr()
+    pub fn cells(&self) -> *const u32 {
+        self.cells.as_slice().as_ptr()
     }
 
     /// Construct a new universe.
     pub fn new() -> Self {
-        let width = 64;
-        let height = 64;
+        let width = 8;
+        let height = 8;
 
-        let cells = (0..width * height)
-            .map(|_i| {
-                if js_sys::Math::random() < 0.5 {
-                    Cell::Alive
-                } else {
-                    Cell::Dead
-                }
-            })
-            .collect();
+        let size = (width * height) as usize;
+        let mut cells = FixedBitSet::with_capacity(size);
+
+        for i in 0..size {
+            cells.set(i, i % 2 == 0 || i % 7 == 0);
+        }
 
         Self {
             width,
             height,
             cells,
         }
-    }
-
-    /// Render the state of the world to a string.
-    pub fn render(&self) -> String {
-        self.to_string()
     }
 
     /// Advance the state of the world by 1 tick.
@@ -118,44 +109,28 @@ impl Universe {
                 let idx = self.get_index(row, col);
                 let live_neighbors = self.live_neighbor_count(row, col);
                 let cell = self.cells[idx];
-                let next_cell = match (cell, live_neighbors) {
-                    // Rule 1: Any live cell with fewer than two live neighbours
-                    // dies, as if caused by underpopulation.
-                    (Cell::Alive, x) if x < 2 => Cell::Dead,
-                    // Rule 2: Any live cell with two or three live neighbours
-                    // lives on to the next generation.
-                    (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
-                    // Rule 3: Any live cell with more than three live
-                    // neighbours dies, as if by overpopulation.
-                    (Cell::Alive, x) if x > 3 => Cell::Dead,
-                    // Rule 4: Any dead cell with exactly three live neighbours
-                    // becomes a live cell, as if by reproduction.
-                    (Cell::Dead, 3) => Cell::Alive,
-                    // All other cells remain in the same state.
-                    (otherwise, _) => otherwise,
-                };
-                next_cells[idx] = next_cell;
+                next_cells.set(
+                    idx,
+                    match (cell, live_neighbors) {
+                        // Rule 1: Any live cell with fewer than two live neighbours
+                        // dies, as if caused by underpopulation.
+                        (true, x) if x < 2 => false,
+                        // Rule 2: Any live cell with two or three live neighbours
+                        // lives on to the next generation.
+                        (true, 2) | (true, 3) => true,
+                        // Rule 3: Any live cell with more than three live
+                        // neighbours dies, as if by overpopulation.
+                        (true, x) if x > 3 => false,
+                        // Rule 4: Any dead cell with exactly three live neighbours
+                        // becomes a live cell, as if by reproduction.
+                        (false, 3) => true,
+                        // All other cells remain in the same state.
+                        (otherwise, _) => otherwise,
+                    },
+                );
             }
         }
 
         self.cells = next_cells;
-    }
-}
-
-/// Add support for a `to_string()` method
-impl fmt::Display for Universe {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for line in self.cells.as_slice().chunks(self.width as usize) {
-            for &cell in line {
-                let symbol = match cell {
-                    Cell::Dead => '◻',
-                    Cell::Alive => '◼',
-                };
-                write!(f, "{}", symbol)?;
-            }
-            write!(f, "\n")?;
-        }
-
-        Ok(())
     }
 }

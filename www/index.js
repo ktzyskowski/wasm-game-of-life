@@ -7,7 +7,7 @@ import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 
 const DELAY_MS = 1000;
 
-const CELL_SIZE = 5; // px
+const CELL_SIZE = 16; // px
 const GRID_COLOR = "#CCCCCC";
 const DEAD_COLOR = "#FFFFFF";
 const ALIVE_COLOR = "#000000";
@@ -31,6 +31,12 @@ const ctx = canvas.getContext("2d");
 
 const getIndex = (row, col) => {
   return row * width + col;
+};
+
+const bitIsSet = (n, arr) => {
+  const byte = Math.floor(n / 8);
+  const mask = 1 << n % 8;
+  return (arr[byte] & mask) === mask;
 };
 
 //
@@ -63,13 +69,17 @@ const renderGrid = () => {
 };
 
 const renderCells = () => {
-  const cells = new Uint8Array(memory.buffer, universe.cells(), width * height);
+  const cells = new Uint8Array(
+    memory.buffer,
+    universe.cells(),
+    (width * height) / 8
+  );
   ctx.beginPath();
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
       const idx = getIndex(row, col);
 
-      ctx.fillStyle = cells[idx] === Cell.Dead ? DEAD_COLOR : ALIVE_COLOR;
+      ctx.fillStyle = bitIsSet(idx, cells) ? ALIVE_COLOR : DEAD_COLOR;
 
       ctx.fillRect(
         col * (CELL_SIZE + 1) + 1,
