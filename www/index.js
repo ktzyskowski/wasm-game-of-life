@@ -1,4 +1,4 @@
-import { Cell, Universe } from "wasm-game-of-life";
+import { Universe } from "wasm-game-of-life";
 import { memory } from "wasm-game-of-life/wasm_game_of_life_bg";
 
 //
@@ -98,15 +98,23 @@ const renderCells = () => {
 //
 
 let previousTimeStamp;
+let animationId;
+
+const isPaused = () => {
+  return animationId === null;
+};
 
 const render = () => {
   renderGrid();
   renderCells();
-  universe.tick();
-  requestAnimationFrame(step);
+  animationId = requestAnimationFrame(step);
 };
 
 const step = (timeStamp) => {
+  if (isPaused()) {
+    return;
+  }
+
   if (previousTimeStamp === undefined) {
     previousTimeStamp = timeStamp;
   }
@@ -114,10 +122,42 @@ const step = (timeStamp) => {
   const elapsed = timeStamp - previousTimeStamp;
   if (elapsed > DELAY_MS) {
     previousTimeStamp = timeStamp;
+    universe.tick();
     render();
   }
 
-  requestAnimationFrame(step);
+  animationId = requestAnimationFrame(step);
 };
 
+//
+// Play/pause
+//
+
+const playPauseButton = document.getElementById("play-pause");
+
+const play = () => {
+  playPauseButton.textContent = "Pause";
+  render();
+};
+
+const pause = () => {
+  playPauseButton.textContent = "Play";
+  cancelAnimationFrame(animationId);
+  animationId = null;
+  previousTimeStamp = null;
+};
+
+playPauseButton.addEventListener("click", (_) => {
+  if (isPaused()) {
+    play();
+  } else {
+    pause();
+  }
+});
+
+//
+// Start simulation
+//
+
 render();
+play();
