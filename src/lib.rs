@@ -1,6 +1,7 @@
 mod utils;
 
 extern crate js_sys;
+extern crate web_sys;
 use fixedbitset::FixedBitSet;
 use wasm_bindgen::prelude::*;
 
@@ -9,6 +10,13 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
 
 #[wasm_bindgen]
 pub struct Universe {
@@ -109,6 +117,13 @@ impl Universe {
         for i in 0..size {
             cells.set(i, i % 2 == 0 || i % 7 == 0);
         }
+
+        log!(
+            "Creating a new [{}, {}] universe with {} live cells.",
+            width,
+            height,
+            cells.count_ones(..)
+        );
 
         Self {
             width,
