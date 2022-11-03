@@ -94,6 +94,26 @@ const renderCells = () => {
 };
 
 //
+// Randomize button
+//
+
+const randomizeButton = document.getElementById("randomize");
+randomizeButton.addEventListener("click", (_) => {
+  universe.randomize();
+  render();
+});
+
+//
+// Clear button
+//
+
+const clearButton = document.getElementById("clear");
+clearButton.addEventListener("click", (_) => {
+  universe.clear();
+  render();
+});
+
+//
 // Render loop
 //
 
@@ -107,7 +127,6 @@ const isPaused = () => {
 const render = () => {
   renderGrid();
   renderCells();
-  animationId = requestAnimationFrame(step);
 };
 
 const step = (timeStamp) => {
@@ -124,6 +143,7 @@ const step = (timeStamp) => {
     previousTimeStamp = timeStamp;
     universe.tick();
     render();
+    animationId = requestAnimationFrame(step);
   }
 
   animationId = requestAnimationFrame(step);
@@ -137,14 +157,13 @@ const playPauseButton = document.getElementById("play-pause");
 
 const play = () => {
   playPauseButton.textContent = "Pause";
-  render();
+  animationId = requestAnimationFrame(step);
 };
 
 const pause = () => {
   playPauseButton.textContent = "Play";
   cancelAnimationFrame(animationId);
   animationId = null;
-  previousTimeStamp = null;
 };
 
 playPauseButton.addEventListener("click", (_) => {
@@ -153,6 +172,37 @@ playPauseButton.addEventListener("click", (_) => {
   } else {
     pause();
   }
+});
+
+//
+// Cell toggleability
+//
+
+canvas.addEventListener("click", (event) => {
+  const boundingRect = canvas.getBoundingClientRect();
+
+  const scaleX = canvas.width / boundingRect.width;
+  const scaleY = canvas.height / boundingRect.height;
+
+  const canvasLeft = (event.clientX - boundingRect.left) * scaleX;
+  const canvasTop = (event.clientY - boundingRect.top) * scaleY;
+
+  const row = Math.min(Math.floor(canvasTop / (CELL_SIZE + 1)), height - 1);
+  const col = Math.min(Math.floor(canvasLeft / (CELL_SIZE + 1)), width - 1);
+
+  if (event.altKey) {
+    // Insert a glider:
+    universe.set_cell(row, col, true);
+    universe.set_cell(row, col + 1, true);
+    universe.set_cell(row + 1, col, true);
+    universe.set_cell(row + height - 1, col + 1, true);
+    universe.set_cell(row + height - 1, col + width - 1, true);
+  } else {
+    // Just toggle the cell normally:
+    universe.toggle_cell(row, col);
+  }
+
+  render();
 });
 
 //

@@ -17,8 +17,15 @@
       }
 
       #play-pause {
-        width: 80px;
+        width: 4rem;
+      }
+
+      .container {
         margin-bottom: 1rem;
+      }
+
+      .space-right {
+        margin-right: 0.375rem;
       }
     </style>
   </head>
@@ -26,7 +33,17 @@
     <noscript>
       This app JavaScript content, please enable JavaScript in your browser.
     </noscript>
-    <button id="play-pause"></button>
+
+    <form class="settings-form">
+      <fieldset class="container">
+        <legend>Settings</legend>
+        <button type="button" class="space-right" id="randomize">
+          Randomize
+        </button>
+        <button type="button" class="space-right" id="clear">Clear</button>
+        <button type="button" id="play-pause"></button>
+      </fieldset>
+    </form>
     <canvas id="game-of-life-canvas"></canvas>
     <script src="./bootstrap.js"></script>
   </body>

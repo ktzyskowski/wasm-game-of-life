@@ -104,12 +104,36 @@ impl Universe {
         self.cells.as_slice().as_ptr()
     }
 
+    /// Turn a dead cell into a live cell, and vice versa.
+    pub fn toggle_cell(&mut self, row: u32, col: u32) {
+        let idx = self.get_index(row % self.height, col % self.width);
+        self.cells.set(idx, !self.cells[idx]);
+    }
+
+    /// Turn a dead cell into a live cell.
+    pub fn set_cell(&mut self, row: u32, col: u32, state: bool) {
+        let idx = self.get_index(row % self.height, col % self.width);
+        self.cells.set(idx, state);
+    }
+
+    /// Clear the state, turning all cells dead.
+    pub fn clear(&mut self) {
+        self.cells.clear();
+    }
+
+    /// Randomize the state of the universe.
+    pub fn randomize(&mut self) {
+        for idx in 0..self.cells.len() {
+            self.cells.set(idx, js_sys::Math::random() < 0.5);
+        }
+    }
+
     /// Construct a new universe.
     pub fn new() -> Self {
         utils::set_panic_hook();
 
-        let width = 8;
-        let height = 8;
+        let width = 32;
+        let height = 32;
 
         let size = (width * height) as usize;
         let mut cells = FixedBitSet::with_capacity(size);
